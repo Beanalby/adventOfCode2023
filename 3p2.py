@@ -63,11 +63,12 @@ class Board:
         # and pos ISN'T a number.  Handle that case first
         line = self.getLine(lineNum)
         
-        # only bother checking if we're not on the left/right edge
+        # only check special case if we're not on the left/right edge
         if pos!=0 and pos != self.width-1:
             if isDigit(line[pos-1]) \
                and not isDigit(line[pos]) \
                and isDigit(line[pos+1]):
+                # special case!
                 return self.getExpandedNumber(lineNum, pos-1) \
                     + self.getExpandedNumber(lineNum, pos+1)
 
@@ -78,13 +79,16 @@ class Board:
             return self.getExpandedNumber(lineNum, pos-1)
         if isDigit(line[pos]):
             return self.getExpandedNumber(lineNum, pos)
-        if pos < isDigit(line[pos]):
-            return self.getExpandedNumber(lineNum, pos)
+        if pos < self.width and isDigit(line[pos+1]):
+            return self.getExpandedNumber(lineNum, pos+1)
         # no digits in any of the 3 spots
         return []
 
     def getSurroundingNumbers(self, lineNum, pos):
-        return []
+        return self.getSurroundingVerticalNumbers(lineNum-1, pos) \
+            + self.getExpandedNumber(lineNum, pos-1) \
+            + self.getExpandedNumber(lineNum, pos+1) \
+            + self.getSurroundingVerticalNumbers(lineNum+1, pos)
 
 boardSample = Board(open("3.txt").read())
 boardTest = Board(open("3test.txt").read())
@@ -119,9 +123,16 @@ class TestGuts(unittest.TestCase):
 
     def test_getSurroundingVerticalNumbers(self):
         self.assertEqual(boardTest.getSurroundingVerticalNumbers(0, 3), [467])
+        self.assertEqual(boardTest.getSurroundingVerticalNumbers(0, 4), [114])
         self.assertEqual(boardTest.getSurroundingVerticalNumbers(2, 3), [35])
         self.assertEqual(boardTest.getSurroundingVerticalNumbers(5, 3), [])
         self.assertEqual(boardTest.getSurroundingVerticalNumbers(9, 4), [664, 598])
+
+    def test_getSurroundingNumbers(self):
+        self.assertEqual(boardTest.getSurroundingNumbers(1, 3), [467,35])
+        self.assertEqual(boardTest.getSurroundingNumbers(1, 4), [114,35])
+        self.assertEqual(boardTest.getSurroundingNumbers(4, 3), [617])
+        self.assertEqual(boardTest.getSurroundingNumbers(5, 5), [592])
 
 def doThing():
     print("0,0={}".format(board.getExpandedNumber(10, 9)))
