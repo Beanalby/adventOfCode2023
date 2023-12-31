@@ -90,6 +90,28 @@ class Board:
             + self.getExpandedNumber(lineNum, pos+1) \
             + self.getSurroundingVerticalNumbers(lineNum+1, pos)
 
+    def getLineGearRatios(self, lineNum):
+        # for each of the * in the lines, get the surrounding
+        # numbers.  If there are two numbers, add their product
+        # to our running total
+        total = 0
+        line = self.getLine(lineNum)
+        for (i, c) in enumerate(line):
+            if c=='*':
+                numbers = self.getSurroundingNumbers(lineNum, i)
+                if len(numbers)==2:
+                    print("  +++ gear @ ({},{}), adding {}x{} = {:,}".format(lineNum, i, numbers[0], numbers[1], numbers[0]*numbers[1]))
+                    total += numbers[0]*numbers[1]
+        return total
+
+    def getGearRatios(self):
+        total = 0
+        for i in range(0, self.width):
+            lineTotal = self.getLineGearRatios(i)
+            total += lineTotal
+            print("+++ {} has {:,}, now total = {:,}".format(i, lineTotal, total))
+        return total
+
 boardSample = Board(open("3.txt").read())
 boardTest = Board(open("3test.txt").read())
 boardReal = Board(open("3real.txt").read())
@@ -134,10 +156,26 @@ class TestGuts(unittest.TestCase):
         self.assertEqual(boardTest.getSurroundingNumbers(4, 3), [617])
         self.assertEqual(boardTest.getSurroundingNumbers(5, 5), [592])
 
+    def test_getLineGearRatios(self):
+        self.assertEqual(boardTest.getLineGearRatios(0), 0)
+        self.assertEqual(boardTest.getLineGearRatios(1), 16345)
+        self.assertEqual(boardTest.getLineGearRatios(2), 0)
+        self.assertEqual(boardTest.getLineGearRatios(3), 0)
+        self.assertEqual(boardTest.getLineGearRatios(4), 0)
+        self.assertEqual(boardTest.getLineGearRatios(5), 0)
+        self.assertEqual(boardTest.getLineGearRatios(6), 0)
+        self.assertEqual(boardTest.getLineGearRatios(7), 0)
+        self.assertEqual(boardTest.getLineGearRatios(8), 451490)
+        self.assertEqual(boardTest.getLineGearRatios(9), 0)
+        self.assertEqual(boardTest.getLineGearRatios(10), 0)
+
+    def test_getGearRatios(self):
+        self.assertEqual(boardTest.getGearRatios(), 467835)
+
 def doThing():
-    print("0,0={}".format(board.getExpandedNumber(10, 9)))
-    # print("total={}".format(board.getPartTotal()))
+    # print("totalTest={}".format(boardTest.getGearRatios()))
+    print("totalReal={}".format(boardReal.getGearRatios()))
 
 if __name__=="__main__":
-    unittest.main()
-    # doThing()
+    # unittest.main()
+    doThing()
