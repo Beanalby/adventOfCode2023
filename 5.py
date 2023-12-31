@@ -13,6 +13,11 @@ class Mapper:
         self.sourceStart=sourceStart
         self.rangeLength=rangeLength
 
+    def __str__(self):
+        return "{}->{} to {}->{}"\
+            .format(self.sourceStart,self.sourceStart+self.rangeLength,
+                    self.destStart, self.destStart+self.rangeLength)
+
     def isCorrectMapper(self, num):
         return num >= self.sourceStart \
             and num < self.sourceStart+self.rangeLength
@@ -25,9 +30,15 @@ class Mapper:
         return num + (self.destStart-self.sourceStart)
 
 class Stage:
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.mappers = []
-
+    def __str__(self):
+        s = self.name + ":";
+        for m in self.mappers:
+            s += "\n" + str(m)
+        return s
+        
     def addMapper(self, mapper):
         self.mappers.append(mapper)
 
@@ -42,6 +53,12 @@ class Game:
     def __init__(self):
         self.stages = []
 
+    def __str__(self):
+        s = "{} stages:".format(len(self.stages))
+        for stage in self.stages:
+            s += "\n\n" + str(stage)
+        return s
+
     def addStage(self, stage):
         self.stages.append(stage)
 
@@ -51,8 +68,10 @@ class Game:
         return num
 
 class TestGuts(unittest.TestCase):
+
     def test_Mapper(self):
         m = Mapper(50, 98, 2)
+        self.assertEqual(str(m), "98->100 to 50->52")
         self.assertEqual(m.isCorrectMapper(-1), False)
         self.assertEqual(m.isCorrectMapper(0), False)
         self.assertEqual(m.isCorrectMapper(1), False)
@@ -68,9 +87,11 @@ class TestGuts(unittest.TestCase):
         self.assertEqual(m.apply(99), 51)
 
     def test_Stage(self):
-        s = Stage()
+        s = Stage("seed-to-soil")
         s.addMapper(Mapper(50, 98, 2))
         s.addMapper(Mapper(52, 50, 48))
+        self.assertEqual(str(s), "seed-to-soil:\n98->100 to 50->52\n50->98 to 52->100")
+
         testCases = [ [0, 0], [1, 1], [48, 48], [49, 49], [50, 52], [51, 53], \
                      [52, 54], [96, 98], [97, 99], [98, 50], [99, 51], [100, 100]]
         for testCase in testCases:
@@ -80,16 +101,18 @@ class TestGuts(unittest.TestCase):
     def test_Game(self):
         g = Game()
 
-        s1 = Stage()
+        s1 = Stage("seed-to-soil")
         g.addStage(s1)
         s1.addMapper(Mapper(50, 98, 2))
         s1.addMapper(Mapper(52, 50, 48))
 
-        s2 = Stage()
+        s2 = Stage("soil-to-fertilizer")
         g.addStage(s2)
         s2.addMapper(Mapper(0, 15, 37))
         s2.addMapper(Mapper(37, 52, 2))
         s2.addMapper(Mapper(39, 0, 15))
+
+        self.assertEqual(str(g), "2 stages:\n\nseed-to-soil:\n98->100 to 50->52\n50->98 to 52->100\n\nsoil-to-fertilizer:\n15->52 to 0->37\n52->54 to 37->39\n0->15 to 39->54")
 
         testCases = [ [79, 81], [14, 53], [55, 57], [13, 52] ]
         for testCase in testCases:
