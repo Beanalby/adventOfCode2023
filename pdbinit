@@ -1,0 +1,7 @@
+r
+b Board.spanNextToSymbol
+commands
+pp board.boardLines
+print("testing {}".format(board.boardLines[lineNum][startPos:endPos]))
+end
+r
