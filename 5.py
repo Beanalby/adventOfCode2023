@@ -76,9 +76,7 @@ class Game:
         return num
 
     def parse(self, text):
-
         currentStage=None
-
         for line in text.split("\n"):
             if not line:
                 currentStage=None
@@ -97,6 +95,15 @@ class Game:
             assert currentStage
             (destStart, sourceStart, rangeLength) = map(int, line.split(" "))
             currentStage.addMapper(Mapper(destStart, sourceStart, rangeLength))
+
+    def run(self):
+        lowestLocation = float("inf")
+        print("------------------------------")
+        for seed in self.seeds:
+            location = self.apply(seed)
+            print("seed {:,} gives {:,}".format(seed, location))
+            lowestLocation = min(location, lowestLocation)
+        return lowestLocation
 
 class TestGuts(unittest.TestCase):
 
@@ -158,6 +165,8 @@ class TestGuts(unittest.TestCase):
 
 if __name__=="__main__":
     # with open("5.txt") as inputFile:
-    #     g = Game(inputFile.read())
-    #     print(str(g))
-    unittest.main()
+    with open("5real.txt") as inputFile:
+        g = Game(inputFile.read())
+        print(str(g))
+        print("lowest={:,}".format(g.run()))
+    # unittest.main()
