@@ -33,14 +33,18 @@ class HandType(Enum):
         return NotImplemented
 
 class Hand:
-    def __init__(self, cards):
+    def __init__(self, cards, score=0):
         assert(cards)
         assert(len(cards)==5)
+        self.score = score
         self.cards = cards
         self.handType = self.__GetHandType()
 
     def __str__(self):
-        return self.cards
+        s = self.cards
+        if self.score:
+            s += " @ " + str(self.score)
+        return s
     def __repr__(self):
         return self.__str__()
 
@@ -57,7 +61,6 @@ class Hand:
         for i, j in zip(self.cards, other.cards):
             if i != j:
                 return cardToValue[i] < cardToValue[j]
-
 
     def __GetHandType(self):
         # split the cards into their counts
@@ -83,6 +86,23 @@ class Hand:
 
         print(f"dict={cardDict}, counts={cardCounts}")
         
+class Game:
+    def __init__(self, filename):
+        self.filename = filename
+
+    def run(self):
+        hands = []
+        with open(self.filename) as inputFile:
+            for line in inputFile.read().splitlines():
+                (cards, score) = line.split()
+                hands.append(Hand(cards, int(score)))
+        hands.sort()
+
+        total = 0
+        for (i, hand) in enumerate(hands):
+            total += (i+1) * hand.score
+        return total
+
 class TestGuts(unittest.TestCase):
 
     def test_handType(self):
@@ -106,5 +126,9 @@ class TestGuts(unittest.TestCase):
         handsSorted = [Hand(x) for x in testDataSorted]
         self.assertEqual(sorted(hands), handsSorted)
 
+    def test_game(self):
+        self.assertEqual(Game("7.txt").run(), 6440)
+
 if __name__ == "__main__":
-    unittest.main()
+    # unittest.main()
+    print("total=" + str(Game("7real.txt").run()))
