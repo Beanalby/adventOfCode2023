@@ -115,6 +115,57 @@ class Stage:
         # gets passed through as-is
         return normalizeAnswerSet(answerOutput + answerSet)
 
+class Game:
+    def __init__(self, text):
+        self.stages = []
+        self.seeds = []
+
+        if text:
+            self.parse(text)
+
+    def __str__(self):
+        s = "{} stages:".format(len(self.stages))
+        for stage in self.stages:
+            s += "\n\n" + str(stage)
+        if self.seeds:
+            s += "\n\nseeds: {}".format(self.seeds)
+        return s
+
+    def addStage(self, stage):
+        self.stages.append(stage)
+
+    def parse(self, text):
+        currentStage=None
+        for line in text.split("\n"):
+            if not line:
+                currentStage=None
+                continue
+
+            if line.startswith("seeds: "):
+                seedText = line.split(": ")[1]
+                pendingSource = None
+                for i in seedText.split(" "):
+                    if not pendingSource:
+                        pendingSource = int(i)
+                        continue
+                    self.seeds.append((pendingSource, pendingSource+int(i)))
+                    pendingSource = None
+                # Should have had an even number of seeds+ranges
+                assert(not pendingSource)
+                self.seeds.sort()
+                continue
+
+            if line.endswith(" map:"):
+                currentStage = Stage(line.split(" ")[0])
+                self.addStage(currentStage)
+                continue
+
+            # should be line of digits parsing a stage
+            assert currentStage
+            (destStart, sourceStart, rangeLength) = map(int, line.split(" "))
+            currentStage.addMapper(Mapper(destStart, sourceStart, sourceStart+rangeLength))
+
+
 class TestGuts(unittest.TestCase):
 
     def test_normalizeAnswers(self):
@@ -151,6 +202,18 @@ class TestGuts(unittest.TestCase):
         self.assertEqual(s.apply([(79, 93)]), [(81, 95)])
         self.assertEqual(s.apply([(79, 93),(55,68)]), [(57,70),(81, 95)])
         self.assertEqual(s.apply([(1, 98)]), [(1,50),(52,100)])
+
+        s = Stage("soil-to-fertilizer")
+        s.addMapper(Mapper(0, 15, 52))
+        s.addMapper(Mapper(37, 52, 54))
+        s.addMapper(Mapper(39, 0, 15))
+        self.assertEqual(s.apply([(57,70),(81, 95)]), [(57,70),(81,95)])
+
+    def test_GameParse(self):
+        g = None
+        with open("5.txt") as inputFile:
+            g = Game(inputFile.read())
+        self.assertEqual(str(g), "7 stages:\n\nseed-to-soil:\n50->98 to 52->100\n98->100 to 50->52\n\nsoil-to-fertilizer:\n0->15 to 39->54\n15->52 to 0->37\n52->54 to 37->39\n\nfertilizer-to-water:\n0->7 to 42->49\n7->11 to 57->61\n11->53 to 0->42\n53->61 to 49->57\n\nwater-to-light:\n18->25 to 88->95\n25->95 to 18->88\n\nlight-to-temperature:\n45->64 to 81->100\n64->77 to 68->81\n77->100 to 45->68\n\ntemperature-to-humidity:\n0->69 to 1->70\n69->70 to 0->1\n\nhumidity-to-location:\n56->93 to 60->97\n93->97 to 56->60\n\nseeds: [(55, 68), (79, 93)]")
 
 if __name__=="__main__":
     # with open("5.txt") as inputFile:
