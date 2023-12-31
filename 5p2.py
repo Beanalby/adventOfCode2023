@@ -50,7 +50,36 @@ class Mapper:
         return num >= self.sourceStart \
             and num < self.sourceStart+self.rangeLength
 
-    def apply(self, answerSet):
+    # splits the passed answer into 3 sections: the section below
+    # this mapper, the section this mapper transformed, and the
+    # section above this mapper.  Each could be None, but at least
+    # one will be non-None
+    def splitAnswer(self, answer):
+        answerBelow = None
+        transformed = None
+        answerAbove = None
+
+        # extract the section below, if any
+        if answer[0] < self.sourceStart:
+            answerBelow = (answer[0],
+                           min(answer[1],
+                               self.sourceStart - answer[0]))
+
+        # extract the transformed section
+        offset = self.destStart - self.sourceStart
+        transformedStart = max(answer[0], self.sourceStart)+offset
+        transformedEnd = min(answer[0]+answer[1],self.sourceStart+self.rangeLength)+offset
+        if(transformedStart < transformedEnd):
+            transformed = (transformedStart, transformedEnd-transformedStart)
+        
+        # extract the above section
+        if answer[0]+answer[1] > self.sourceStart+self.rangeLength:
+            aboveStart = max(answer[0], self.sourceStart+self.rangeLength)
+            answerAbove = (aboveStart, (answer[1]+answer[0]) - aboveStart)
+
+        return (answerBelow, transformed, answerAbove)
+
+    def UselessApply(self, answerSet):
         answersNew = []
         for answer in answerSet:
             # if it's completely below our min, just passes through
@@ -80,8 +109,22 @@ class TestGuts(unittest.TestCase):
     def test_Mapper(self):
         m = Mapper(50, 98, 2)
         self.assertEqual(str(m), "98->100 to 50->52")
-        self.assertEqual(m.apply(98), 50)
-        self.assertEqual(m.apply(99), 51)
+        # self.assertEqual(m.apply(98), 50)
+        # self.assertEqual(m.apply(99), 51)
+    def test_MapperSplit(self):
+        # test the pen & paper version
+        m = Mapper(50, 5, 5)
+
+        self.assertEqual(m.splitAnswer((1,3)), ((1,3),None,None))
+        self.assertEqual(m.splitAnswer((11, 2)), (None, None, (11,2)))
+        self.assertEqual(m.splitAnswer((3, 10)), ((3,2), (50, 5), (10, 3)))
+        self.assertEqual(m.splitAnswer((7, 5)), (None, (52, 3), (10, 2)))
+
+        # test the first example
+        m1 = Mapper(50, 98, 2)
+        m2 = Mapper(52, 50, 48)
+        self.assertEqual(m1.splitAnswer((79, 14)), ((79,14), None, None))
+        self.assertEqual(m2.splitAnswer((79, 14)), (None, (81, 14), None))
 
 if __name__=="__main__":
     # with open("5.txt") as inputFile:
