@@ -38,6 +38,18 @@ class Stage:
         # no mapper were right, leave as-is
         return num
 
+class Game:
+    def __init__(self):
+        self.stages = []
+
+    def addStage(self, stage):
+        self.stages.append(stage)
+
+    def apply(self, num):
+        for s in self.stages:
+            num = s.apply(num)
+        return num
+
 class TestGuts(unittest.TestCase):
     def test_Mapper(self):
         m = Mapper(50, 98, 2)
@@ -61,9 +73,28 @@ class TestGuts(unittest.TestCase):
         s.addMapper(Mapper(52, 50, 48))
         testCases = [ [0, 0], [1, 1], [48, 48], [49, 49], [50, 52], [51, 53], \
                      [52, 54], [96, 98], [97, 99], [98, 50], [99, 51], [100, 100]]
-        for testRun in testCases:
-            (testInput, testOutput) = testRun
+        for testCase in testCases:
+            (testInput, testOutput) = testCase
             self.assertEqual(s.apply(testInput), testOutput)
+
+    def test_Game(self):
+        g = Game()
+
+        s1 = Stage()
+        g.addStage(s1)
+        s1.addMapper(Mapper(50, 98, 2))
+        s1.addMapper(Mapper(52, 50, 48))
+
+        s2 = Stage()
+        g.addStage(s2)
+        s2.addMapper(Mapper(0, 15, 37))
+        s2.addMapper(Mapper(37, 52, 2))
+        s2.addMapper(Mapper(39, 0, 15))
+
+        testCases = [ [79, 81], [14, 53], [55, 57], [13, 52] ]
+        for testCase in testCases:
+            (testInput, testOutput) = testCase
+            self.assertEqual(g.apply(testInput), testOutput)
 
 if __name__=="__main__":
     unittest.main()
