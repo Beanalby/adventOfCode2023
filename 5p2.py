@@ -134,6 +134,12 @@ class Game:
     def addStage(self, stage):
         self.stages.append(stage)
 
+    def run(self):
+        answerRun = list(self.seeds)
+        for stage in self.stages:
+            answerRun = stage.apply(answerRun)
+        return answerRun
+
     def parse(self, text):
         currentStage=None
         for line in text.split("\n"):
@@ -165,6 +171,12 @@ class Game:
             (destStart, sourceStart, rangeLength) = map(int, line.split(" "))
             currentStage.addMapper(Mapper(destStart, sourceStart, sourceStart+rangeLength))
 
+textSample = None
+with open("5.txt") as inputFile:
+    textSample = inputFile.read()
+textReal = None
+with open("5real.txt") as inputFile:
+     textReal = inputFile.read()
 
 class TestGuts(unittest.TestCase):
 
@@ -210,15 +222,15 @@ class TestGuts(unittest.TestCase):
         self.assertEqual(s.apply([(57,70),(81, 95)]), [(57,70),(81,95)])
 
     def test_GameParse(self):
-        g = None
-        with open("5.txt") as inputFile:
-            g = Game(inputFile.read())
+        g = Game(textSample)
         self.assertEqual(str(g), "7 stages:\n\nseed-to-soil:\n50->98 to 52->100\n98->100 to 50->52\n\nsoil-to-fertilizer:\n0->15 to 39->54\n15->52 to 0->37\n52->54 to 37->39\n\nfertilizer-to-water:\n0->7 to 42->49\n7->11 to 57->61\n11->53 to 0->42\n53->61 to 49->57\n\nwater-to-light:\n18->25 to 88->95\n25->95 to 18->88\n\nlight-to-temperature:\n45->64 to 81->100\n64->77 to 68->81\n77->100 to 45->68\n\ntemperature-to-humidity:\n0->69 to 1->70\n69->70 to 0->1\n\nhumidity-to-location:\n56->93 to 60->97\n93->97 to 56->60\n\nseeds: [(55, 68), (79, 93)]")
 
+    def test_GameRun(self):
+        g = Game(textSample)
+        self.assertEqual(g.run(), [(46, 61), (82, 85), (86, 90), (94, 99)])
+
 if __name__=="__main__":
-    # with open("5.txt") as inputFile:
-    # with open("5real.txt") as inputFile:
-    #     g = Game(inputFile.read())
-    #     print(str(g))
-    #     print("lowest={:,}".format(g.run()))
-    unittest.main()
+    # unittest.main()
+    g = Game(textReal)
+    output = g.run()
+    print("output={}\nlowest={}".format(output, output[0][0]))
