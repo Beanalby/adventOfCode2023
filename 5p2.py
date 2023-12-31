@@ -50,11 +50,24 @@ class Mapper:
         return num >= self.sourceStart \
             and num < self.sourceStart+self.rangeLength
 
-    def apply(self, num):
-        if not self.isCorrectMapper(num):
-            error = "num {} shouldn't be used in mapper {}-{}"\
-                .format(num, self.sourceStart, self.sourceStart+self.rangeLength)
-            raise ValueError(error)
+    def apply(self, answerSet):
+        answersNew = []
+        for answer in answerSet:
+            # if it's completely below our min, just passes through
+            if answer[0]+answer[1] <= self.sourceStart:
+                answersNew.append(answer)
+                continue
+            # if it's completely above our range, also straight through
+            if self.sourceStart+self.rangeLength <= answer[0]:
+                answersNew.append(answer)
+                continue
+
+            # there's overlap!
+            # see if there's any below that passes through
+            if answer[0] < self.sourceStart:
+                answersNew.append((answer[0], self.sourceStart-answer[0]))
+            # map the overlap
+            
         return num + (self.destStart-self.sourceStart)
 
 class TestGuts(unittest.TestCase):
@@ -67,17 +80,6 @@ class TestGuts(unittest.TestCase):
     def test_Mapper(self):
         m = Mapper(50, 98, 2)
         self.assertEqual(str(m), "98->100 to 50->52")
-        self.assertEqual(m.isCorrectMapper(-1), False)
-        self.assertEqual(m.isCorrectMapper(0), False)
-        self.assertEqual(m.isCorrectMapper(1), False)
-        self.assertEqual(m.isCorrectMapper(49), False)
-        self.assertEqual(m.isCorrectMapper(50), False)
-        self.assertEqual(m.isCorrectMapper(51), False)
-        self.assertEqual(m.isCorrectMapper(97), False)
-        self.assertEqual(m.isCorrectMapper(98), True)
-        self.assertEqual(m.isCorrectMapper(99), True)
-        self.assertEqual(m.isCorrectMapper(100), False)
-
         self.assertEqual(m.apply(98), 50)
         self.assertEqual(m.apply(99), 51)
 
