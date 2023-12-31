@@ -22,17 +22,17 @@ class Board:
     def spanNextToSymbol(self, lineNum, startPos, endPos):
         # breakpoint()
         # check above
-        if self.spanContainsSymbol(lineNum-1, startPos-1, endPos+2):
+        if self.spanContainsSymbol(lineNum-1, startPos-1, endPos+1):
             return True
 
         # check this same line, one space before & after
         if self.spanContainsSymbol(lineNum, startPos-1, startPos):
             return True
-        if self.spanContainsSymbol(lineNum, startPos+endPos, startPos+endPos+1):
+        if self.spanContainsSymbol(lineNum, endPos, endPos+1):
             return True
 
         # check below
-        if self.spanContainsSymbol(lineNum+1, startPos-1, endPos+2):
+        if self.spanContainsSymbol(lineNum+1, startPos-1, endPos+1):
             return True
 
         # no symbols!
@@ -54,11 +54,7 @@ if __name__=="__main__":
     with open("3real.txt") as inputFile:
         board = Board(inputFile.read())
         print("total={}".format(board.getPartTotal()))
-        # print("first on first line={}".format(board.spanNextToSymbol(0, 0, 3)))
-        # print("second on first line={}".format(board.spanNextToSymbol(0, 5, 3)))
-        # print ("on last line={}".format(board.spanNextToSymbol(9, 1, 3)))
-        # print("end of 6th line={}".format(board.spanNextToSymbol(5, 8, 2)))
-        # breakpoint()
+
     print("Done.")
 
 # pattern = re.compile("\d+")
