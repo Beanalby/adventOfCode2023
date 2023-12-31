@@ -17,12 +17,12 @@ def normalizeAnswerSet(answerSet):
         if not answerCurrent:
             answerCurrent = answer
             continue
-        if answerCurrent[0]+answerCurrent[1] > answer[0]:
+        if answerCurrent[1] > answer[0]:
             # answer gets consumed into answerCurrent
             # expand answer's maxRange if necessary
-            newBase = min(answer[0],answerCurrent[0])
-            newMax = max(answer[0]+answer[1],answerCurrent[0]+answerCurrent[1])
-            answerCurrent = (newBase, newMax-newBase)
+            newStart = min(answer[0],answerCurrent[0])
+            newEnd = max(answer[1],answerCurrent[1])
+            answerCurrent = (newStart, newEnd)
         else:
             # this new answer set outside of answerCurrent,
             # the latter isn't going to change anymore
@@ -33,22 +33,18 @@ def normalizeAnswerSet(answerSet):
     return answersNew
 
 class Mapper:
-    def __init__(self, destStart, sourceStart, rangeLength):
+    def __init__(self, destStart, sourceStart, sourceEnd):
         self.destStart=destStart
         self.sourceStart=sourceStart
-        self.rangeLength=rangeLength
+        self.sourceEnd=sourceEnd
 
     def __lt__(self, other):
         return self.sourceStart < other.sourceStart
 
     def __str__(self):
         return "{}->{} to {}->{}"\
-            .format(self.sourceStart,self.sourceStart+self.rangeLength,
-                    self.destStart, self.destStart+self.rangeLength)
-
-    def isCorrectMapper(self, num):
-        return num >= self.sourceStart \
-            and num < self.sourceStart+self.rangeLength
+            .format(self.sourceStart,self.sourceEnd,
+                    self.destStart, self.destStart+(self.sourceEnd-self.sourceStart))
 
     # splits the passed answer into 3 sections: the section below
     # this mapper, the section this mapper transformed, and the
@@ -56,75 +52,56 @@ class Mapper:
     # one will be non-None
     def splitAnswer(self, answer):
         answerBelow = None
-        transformed = None
+        answerTransformed = None
         answerAbove = None
 
         # extract the section below, if any
         if answer[0] < self.sourceStart:
-            answerBelow = (answer[0],
-                           min(answer[1],
-                               self.sourceStart - answer[0]))
+            answerBelow = (answer[0], min(answer[1], self.sourceStart))
 
         # extract the transformed section
         offset = self.destStart - self.sourceStart
         transformedStart = max(answer[0], self.sourceStart)+offset
-        transformedEnd = min(answer[0]+answer[1],self.sourceStart+self.rangeLength)+offset
+        transformedEnd = min(answer[1],self.sourceEnd)+offset
         if(transformedStart < transformedEnd):
-            transformed = (transformedStart, transformedEnd-transformedStart)
+            answerTransformed = (transformedStart, transformedEnd)
         
         # extract the above section
-        if answer[0]+answer[1] > self.sourceStart+self.rangeLength:
-            aboveStart = max(answer[0], self.sourceStart+self.rangeLength)
-            answerAbove = (aboveStart, (answer[1]+answer[0]) - aboveStart)
+        if answer[1] > self.sourceEnd:
+            answerAbove = (max(answer[0], self.sourceEnd), answer[1])
 
-        return (answerBelow, transformed, answerAbove)
+        assert(answerBelow!=None \
+               or answerTransformed!=None \
+               or answerAbove!=None)
 
-    def UselessApply(self, answerSet):
-        answersNew = []
-        for answer in answerSet:
-            # if it's completely below our min, just passes through
-            if answer[0]+answer[1] <= self.sourceStart:
-                answersNew.append(answer)
-                continue
-            # if it's completely above our range, also straight through
-            if self.sourceStart+self.rangeLength <= answer[0]:
-                answersNew.append(answer)
-                continue
-
-            # there's overlap!
-            # see if there's any below that passes through
-            if answer[0] < self.sourceStart:
-                answersNew.append((answer[0], self.sourceStart-answer[0]))
-            # map the overlap
-            
-        return num + (self.destStart-self.sourceStart)
+        return (answerBelow, answerTransformed, answerAbove)
 
 class TestGuts(unittest.TestCase):
 
     def test_normalizeAnswers(self):
-        self.assertEqual(normalizeAnswerSet([(93, 1), (58, 53), (99, 83), (60, 65)]), [(58, 124)])
-        self.assertEqual(normalizeAnswerSet([(79, 14), (55, 13)]), [(55, 13), (79, 14)])
-        self.assertEqual(normalizeAnswerSet([(29, 24), (86, 82), (41, 3), (21, 15)]), [(21, 32), (86, 82)])
+        self.assertEqual(normalizeAnswerSet([(93, 94), (58, 111), (99, 182), (60, 125)]), [(58, 182)])
+        self.assertEqual(normalizeAnswerSet([(79, 93), (55, 68)]), [(55, 68), (79, 93)])
+        self.assertEqual(normalizeAnswerSet([(29, 53), (86, 168), (41, 44), (21, 37)]), [(21, 53), (86, 168)])
 
     def test_Mapper(self):
-        m = Mapper(50, 98, 2)
+        m = Mapper(50, 98, 100)
         self.assertEqual(str(m), "98->100 to 50->52")
         # self.assertEqual(m.apply(98), 50)
         # self.assertEqual(m.apply(99), 51)
     def test_MapperSplit(self):
         # test the pen & paper version
-        m = Mapper(50, 5, 5)
+        m = Mapper(50, 5, 10)
 
-        self.assertEqual(m.splitAnswer((1,3)), ((1,3),None,None))
-        self.assertEqual(m.splitAnswer((11, 2)), (None, None, (11,2)))
-        self.assertEqual(m.splitAnswer((3, 10)), ((3,2), (50, 5), (10, 3)))
-        self.assertEqual(m.splitAnswer((7, 5)), (None, (52, 3), (10, 2)))
+        self.assertEqual(m.splitAnswer((1,4)), ((1,4),None,None))
+        self.assertEqual(m.splitAnswer((11, 13)), (None, None, (11,13)))
+        self.assertEqual(m.splitAnswer((3, 13)), ((3,5), (50, 55), (10, 13)))
+        self.assertEqual(m.splitAnswer((7, 12)), (None, (52, 55), (10, 12)))
 
         # test the first example
-        m1 = Mapper(50, 98, 2)
-        m2 = Mapper(52, 50, 48)
-        self.assertEqual(m1.splitAnswer((79, 14)), ((79,14), None, None))
-        self.assertEqual(m2.splitAnswer((79, 14)), (None, (81, 14), None))
+        m1 = Mapper(50, 98, 100)
+        m2 = Mapper(52, 50, 98)
+        self.assertEqual(m1.splitAnswer((79, 93)), ((79,93), None, None))
+        self.assertEqual(m2.splitAnswer((79, 93)), (None, (81, 95), None))
 
 if __name__=="__main__":
     # with open("5.txt") as inputFile:
